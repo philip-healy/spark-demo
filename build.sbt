@@ -1,12 +1,11 @@
-import Dependencies._
+name := "SparkDemo"
 
-lazy val root = (project in file(".")).
-  settings(
-    inThisBuild(List(
-      organization := "com.github.philip_healy",
-      scalaVersion := "2.12.4",
-      version      := "0.1.0-SNAPSHOT"
-    )),
-    name := "SparkDemo",
-    libraryDependencies += scalaTest % Test
-  )
+version := "0.1.1"
+
+scalaVersion := "2.11.8"
+
+libraryDependencies += "org.apache.spark" %% "spark-core" % "2.2.1"
+libraryDependencies += "org.apache.spark" %% "spark-mllib" % "2.2.1"
+libraryDependencies += "com.github.tototoshi" %% "scala-csv" % "1.3.5"
+
+libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.4" % "test"
