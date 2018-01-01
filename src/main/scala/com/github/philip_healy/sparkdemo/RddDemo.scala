@@ -4,10 +4,8 @@ import com.github.tototoshi.csv
 import com.github.tototoshi.csv.CSVParser
 import org.apache.spark.SparkConf
 import org.apache.spark.SparkContext
-import org.apache.spark.SparkContext._
-import org.apache.spark.rdd.RDD
-//import org.apache.spark.mllib.stat.Statistics
 //import org.apache.spark.SparkContext._
+import org.apache.spark.rdd.RDD
 
 
 // sbt "run-main com.github.philip_healy.sparkdemo.RddDemo"
@@ -59,6 +57,7 @@ object csvRecordToTitanicPassenger {
   }
 }
 
+
 object RddDemo {
   def main(args: Array[String]): Unit = {
     val sc = createSparkContext()
@@ -66,6 +65,7 @@ object RddDemo {
       val passengers = readPassengerData(sc)
       passengers.cache
       printPassengerAgeStats(passengers)
+      printSurvivalRatesByGender(passengers)
     }
     finally {
       sc.stop()
@@ -93,6 +93,40 @@ object RddDemo {
     val stats = ages.stats
     println("\n")
     println(s"Summary statistics for passenger ages: $stats")
+    println("\n")
+  }
+
+
+  case class SurvivalSummary(numSurvived: Int, numDied: Int, numUnknown: Int) {
+    def numPassengers = numSurvived + numDied + numUnknown
+  }
+
+  def passengerToSurvivalSummary(passenger: TitanicPassenger): SurvivalSummary = {
+    passenger.survived match {
+      case Some(true) => SurvivalSummary(1, 0, 0)
+      case Some(false) => SurvivalSummary(0, 1, 0)
+      case None => SurvivalSummary(0, 0, 1)
+    }
+  }
+
+  def reduceSurvivalSummaries(s1: SurvivalSummary, s2: SurvivalSummary): SurvivalSummary = {
+    SurvivalSummary(
+      s1.numSurvived + s2.numSurvived,
+      s1.numDied + s2.numDied,
+      s1.numUnknown + s2.numUnknown
+    )
+  }
+
+  def printSurvivalRatesByGender(passengers: RDD[TitanicPassenger]): Unit = {
+    val genderToSurvivalSummaryMapping = passengers.map(p => (p.sex, passengerToSurvivalSummary(p)))
+    val survivalSummaries = genderToSurvivalSummaryMapping.reduceByKey(reduceSurvivalSummaries).collect()
+    println("\n")
+    survivalSummaries.foreach(summaryTuple => {
+      val gender = if (summaryTuple._1 == "") "unknown" else summaryTuple._1
+      val summary = summaryTuple._2
+      val survivalPercentage = summary.numSurvived.toDouble / summary.numPassengers.toDouble * 100.0;
+      println(s"$gender\t${summary.numSurvived}/${summary.numPassengers}\t$survivalPercentage")
+    })
     println("\n")
   }
 }
