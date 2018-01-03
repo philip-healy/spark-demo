@@ -4,7 +4,6 @@ import com.github.tototoshi.csv
 import com.github.tototoshi.csv.CSVParser
 import org.apache.spark.SparkConf
 import org.apache.spark.SparkContext
-//import org.apache.spark.SparkContext._
 import org.apache.spark.rdd.RDD
 
 

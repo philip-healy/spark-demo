@@ -9,16 +9,16 @@ import org.apache.spark.sql.functions._
 
 object DataFrameDemo {
   def main(args: Array[String]): Unit = {
-    val session = createSparkSession()
+    val spark = createSparkSession()
     try {
-      val passengers = loadPassengersDataFrame(session)
+      val passengers = loadPassengersDataFrame(spark)
       passengers.cache
       passengers.printSchema
       printPassengerAgeStats(passengers)
       printSurvivalRatesByGender(passengers)
     }
     finally {
-      session.stop()
+      spark.stop()
     }
   }
 
@@ -29,8 +29,8 @@ object DataFrameDemo {
       .getOrCreate()
   }
 
-  def loadPassengersDataFrame(session: SparkSession): DataFrame = {
-    session
+  def loadPassengersDataFrame(spark: SparkSession): DataFrame = {
+    spark
       .read
       .format("csv")
       .option("header", "true")
@@ -38,7 +38,6 @@ object DataFrameDemo {
   }
 
   def printPassengerAgeStats(passengers: DataFrame): Unit = {
-    val stats = passengers.describe("age")
     println("\nAge Stats:")
     passengers.describe("age").show
     println()
@@ -53,7 +52,6 @@ object DataFrameDemo {
       .agg(expr("count(*) as total"), expr("sum(survived) as survived"))
       .withColumn("survivalRate", $"survived" / $"total")
       .show()
-    //passengers.createOrReplaceTempView("passengers")
-    //passengers.sqlContext.sql("select * from passengers group by sex").show
+    println()
   }
 }
