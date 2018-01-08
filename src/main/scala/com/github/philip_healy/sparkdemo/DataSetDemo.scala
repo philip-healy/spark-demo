@@ -2,7 +2,6 @@ package com.github.philip_healy.sparkdemo
 
 
 import org.apache.spark.sql.{Dataset, Encoder, Encoders, SparkSession}
-import org.apache.spark.sql.catalyst.ScalaReflection
 import org.apache.spark.sql.expressions.Aggregator
 import org.apache.spark.sql.types._
 
@@ -33,7 +32,9 @@ object DataSetDemo {
       passengers.cache
       passengers.printSchema
       printPassengerAgeStats(passengers)
+      printSurvivalRatesByAdulthood(passengers)
       printSurvivalRatesByGender(passengers)
+      printSurvivalRatesByTicketClass(passengers)
     }
     finally {
       spark.stop()
@@ -104,14 +105,42 @@ object DataSetDemo {
     override def outputEncoder: Encoder[SurvivalStats] = Encoders.product[SurvivalStats]
   }
 
+
+  def printSurvivalRatesByAdulthood(passengers: Dataset[Passenger]): Unit = {
+    println("\nSurvival stats by adulthood:")
+
+    import passengers.sparkSession.implicits._
+
+    passengers
+      .groupByKey(p => if (p.age >= 18) "adult" else "child")
+      .agg((new SurvivalAggregator).toColumn)
+      .show(false)
+
+    println()
+  }
+
+
   def printSurvivalRatesByGender(passengers: Dataset[Passenger]): Unit = {
-    println("\nSurvival stats:")
+    println("\nSurvival stats by gender:")
 
     import passengers.sparkSession.implicits._
 
     passengers
       .filter(p => p.sex == "male" || p.sex == "female")
       .groupByKey(_.sex)
+      .agg((new SurvivalAggregator).toColumn)
+      .show(false)
+
+    println()
+  }
+
+  def printSurvivalRatesByTicketClass(passengers: Dataset[Passenger]): Unit = {
+    println("\nSurvival stats by gender:")
+
+    import passengers.sparkSession.implicits._
+
+    passengers
+      .groupByKey(_.ticketClass)
       .agg((new SurvivalAggregator).toColumn)
       .show(false)
 

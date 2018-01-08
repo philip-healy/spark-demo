@@ -15,7 +15,9 @@ object DataFrameDemo {
       passengers.cache
       passengers.printSchema
       printPassengerAgeStats(passengers)
+      printSurvivalRatesByAdulthood(passengers)
       printSurvivalRatesByGender(passengers)
+      printSurvivalRatesByTicketClass(passengers)
     }
     finally {
       spark.stop()
@@ -43,12 +45,36 @@ object DataFrameDemo {
     println()
   }
 
+  def printSurvivalRatesByAdulthood(passengers: DataFrame): Unit = {
+    println("\nSurvival stats by adulthood:")
+    import passengers.sqlContext.implicits._
+    passengers
+        .withColumn("adulthood",
+          when($"age" >= 18, lit("adult")).otherwise(lit("child")))
+      .groupBy("adulthood")
+      .agg(expr("count(*) as total"), expr("sum(survived) as survived"))
+      .withColumn("survivalRate", $"survived" / $"total")
+      .show()
+    println()
+  }
+
   def printSurvivalRatesByGender(passengers: DataFrame): Unit = {
-    println("\nSurvival stats:")
+    println("\nSurvival stats by gender:")
     import passengers.sqlContext.implicits._
     passengers
       .filter($"sex" === "male" || $"sex" === "female")
       .groupBy("sex")
+      .agg(expr("count(*) as total"), expr("sum(survived) as survived"))
+      .withColumn("survivalRate", $"survived" / $"total")
+      .show()
+    println()
+  }
+
+  def printSurvivalRatesByTicketClass(passengers: DataFrame): Unit = {
+    println("\nSurvival stats by ticket class:")
+    import passengers.sqlContext.implicits._
+    passengers
+      .groupBy("pclass")
       .agg(expr("count(*) as total"), expr("sum(survived) as survived"))
       .withColumn("survivalRate", $"survived" / $"total")
       .show()

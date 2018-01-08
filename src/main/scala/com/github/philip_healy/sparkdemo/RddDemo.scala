@@ -64,7 +64,9 @@ object RddDemo {
       val passengers = readPassengerData(sc)
       passengers.cache
       printPassengerAgeStats(passengers)
+      printSurvivalRatesByAdulthood(passengers)
       printSurvivalRatesByGender(passengers)
+      printSurvivalRatesByTicketClass(passengers)
     }
     finally {
       sc.stop()
@@ -116,6 +118,20 @@ object RddDemo {
     )
   }
 
+  def printSurvivalRatesByAdulthood(passengers: RDD[TitanicPassenger]): Unit = {
+    val adulthoodToSurvivalSummaryMapping = passengers.map(
+      p => (if (p.age >= 18) "adult" else "child", passengerToSurvivalSummary(p)))
+    val survivalSummaries = adulthoodToSurvivalSummaryMapping.reduceByKey(reduceSurvivalSummaries).collect()
+    println("\n")
+    survivalSummaries.foreach(summaryTuple => {
+      val adulthood = if (summaryTuple._1 == "") "unknown" else summaryTuple._1
+      val summary = summaryTuple._2
+      val survivalPercentage = summary.numSurvived.toDouble / summary.numPassengers.toDouble * 100.0;
+      println(s"$adulthood\t${summary.numSurvived}/${summary.numPassengers}\t$survivalPercentage")
+    })
+    println("\n")
+  }
+
   def printSurvivalRatesByGender(passengers: RDD[TitanicPassenger]): Unit = {
     val genderToSurvivalSummaryMapping = passengers.map(p => (p.sex, passengerToSurvivalSummary(p)))
     val survivalSummaries = genderToSurvivalSummaryMapping.reduceByKey(reduceSurvivalSummaries).collect()
@@ -125,6 +141,24 @@ object RddDemo {
       val summary = summaryTuple._2
       val survivalPercentage = summary.numSurvived.toDouble / summary.numPassengers.toDouble * 100.0;
       println(s"$gender\t${summary.numSurvived}/${summary.numPassengers}\t$survivalPercentage")
+    })
+    println("\n")
+  }
+
+  def printSurvivalRatesByTicketClass(passengers: RDD[TitanicPassenger]): Unit = {
+    val ticketClassToSurvivalSummaryMapping = passengers.map(p => (p.ticketClass, passengerToSurvivalSummary(p)))
+    val survivalSummaries = ticketClassToSurvivalSummaryMapping.reduceByKey(reduceSurvivalSummaries).collect()
+    println("\n")
+    survivalSummaries.foreach(summaryTuple => {
+      val ticketClass = summaryTuple._1 match {
+        case Some(1) => "first"
+        case Some(2) => "second"
+        case Some(3) => "third"
+        case _ => "unknown"
+      }
+      val summary = summaryTuple._2
+      val survivalPercentage = summary.numSurvived.toDouble / summary.numPassengers.toDouble * 100.0;
+      println(s"$ticketClass\t${summary.numSurvived}/${summary.numPassengers}\t$survivalPercentage")
     })
     println("\n")
   }
